@@ -1,0 +1,1081 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+
+  @@map("order_status")
+}
+
+enum PaymentStatus {
+  RECORDED
+  LIQUIDATED
+  CANCELLED
+
+  @@map("payment_status")
+}
+
+enum StockMovementType {
+  INITIAL_BALANCE
+  RESERVATION
+  RELEASE
+  SALE_CONSUMPTION
+  ADJUSTMENT
+  REVERSAL
+
+  @@map("stock_movement_type")
+}
+
+enum FinancialEntryType {
+  REVENUE
+  RECEIVABLE
+  CASH_IN
+  REVERSAL
+
+  @@map("financial_entry_type")
+}
+
+enum OrderType {
+  COUNTER
+  TABLE
+  TAB
+  DELIVERY
+}
+
+enum ServiceTableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  INACTIVE
+}
+
+enum CustomerTabStatus {
+  OPEN
+  REQUESTED_CLOSE
+  CLOSED
+  CANCELLED
+}
+
+enum OrderItemStatus {
+  DRAFT
+  SENT
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum PreparationTicketStatus {
+  PENDING
+  ACKNOWLEDGED
+  PREPARING
+  READY
+  ISSUE
+  CANCELLED
+}
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  document  String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  branches          Branch[]
+  users             User[]
+  products          Product[]
+  orders            Order[]
+  paymentRecords    PaymentRecord[]
+  stockMovements    StockMovement[]
+  financialEntries  FinancialEntry[]
+  auditLogs         AuditLog[]
+  idempotencyKeys   IdempotencyRecord[]
+  productImages     ProductImage[]
+  categories        Category[]
+  roles             Role[]
+  preparationStations PreparationStation[]
+  serviceTables     ServiceTable[]
+  customerTabs      CustomerTab[]
+  orderStatusHistory OrderStatusHistory[]
+  preparationTickets PreparationTicket[]
+  preparationTicketItems PreparationTicketItem[]
+  productPackages   ProductPackage[]
+  sales             Sale[]
+  paymentMethods    PaymentMethod[]
+  cardTerminals     CardTerminal[]
+  cashSessions      CashSession[]
+  cashMovements     CashMovement[]
+  suppliers         Supplier[]
+  supplierProducts  SupplierProduct[]
+  stockLocations    StockLocation[]
+  stockBalances     StockBalance[]
+  stockPackageBalances StockPackageBalance[]
+  inventoryReceipts InventoryReceipt[]
+  inventoryReceiptItems InventoryReceiptItem[]
+  purchaseOrders    PurchaseOrder[]
+  purchaseOrderItems PurchaseOrderItem[]
+  financialCategories FinancialCategory[]
+  costCenters       CostCenter[]
+  accountPayables   AccountPayable[]
+  accountReceivables AccountReceivable[]
+  outboxEvents      OutboxEvent[]
+  syncCommands      SyncCommand[]
+  attachments       Attachment[]
+  reportExports     ReportExport[]
+
+  @@map("tenants")
+}
+
+model Branch {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant            Tenant @relation(fields: [tenantId], references: [id])
+  users             User[]
+  products          Product[]
+  orders            Order[]
+  paymentRecords    PaymentRecord[]
+  stockMovements    StockMovement[]
+  financialEntries  FinancialEntry[]
+  auditLogs         AuditLog[]
+  idempotencyKeys   IdempotencyRecord[]
+  userBranches      UserBranch[]
+  preparationStations PreparationStation[]
+  serviceTables     ServiceTable[]
+  customerTabs      CustomerTab[]
+  preparationTickets PreparationTicket[]
+  cardTerminals     CardTerminal[]
+  cashSessions      CashSession[]
+  cashMovements     CashMovement[]
+  stockLocations    StockLocation[]
+  stockBalances     StockBalance[]
+  stockPackageBalances StockPackageBalance[]
+  inventoryReceipts InventoryReceipt[]
+  purchaseOrders    PurchaseOrder[]
+  costCenters       CostCenter[]
+  accountPayables   AccountPayable[]
+  accountReceivables AccountReceivable[]
+  sales             Sale[]
+  syncCommands      SyncCommand[]
+  reportExports     ReportExport[]
+
+  @@index([tenantId])
+  @@map("branches")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  branchId     String   @map("branch_id") @db.Uuid
+  email        String
+  passwordHash String   @map("password_hash")
+  displayName  String   @map("display_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  branch   Branch @relation(fields: [branchId], references: [id])
+  orders   Order[]
+  auditLogs AuditLog[]
+  productImages ProductImage[]
+  orderStatusHistory OrderStatusHistory[]
+  userBranches UserBranch[]
+  openedCashSessions CashSession[] @relation("cash_session_opened_by")
+  closedCashSessions CashSession[] @relation("cash_session_closed_by")
+  cashMovements CashMovement[]
+  syncCommands SyncCommand[]
+  attachments Attachment[]
+  reportExports ReportExport[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, branchId])
+  @@map("users")
+}
+
+model Product {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  branchId       String   @map("branch_id") @db.Uuid
+  sku            String
+  barcode        String?
+  name           String
+  category       String   @default("Geral")
+  unit           String   @default("un")
+  priceCents     BigInt   @map("price_cents")
+  averageCostCents BigInt @map("average_cost_cents")
+  minStock       Decimal  @default(0) @map("min_stock") @db.Decimal(12, 3)
+  preparationStationId String? @map("preparation_station_id") @db.Uuid
+  active         Boolean  @default(true)
+  ageRestricted  Boolean  @default(false) @map("age_restricted")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tenant          Tenant @relation(fields: [tenantId], references: [id])
+  branch          Branch @relation(fields: [branchId], references: [id])
+  preparationStation PreparationStation? @relation(fields: [preparationStationId], references: [id])
+  orderItems      OrderItem[]
+  stockMovements  StockMovement[]
+  images          ProductImage[]
+  packages        ProductPackage[]
+  supplierProducts SupplierProduct[]
+  stockBalances   StockBalance[]
+  stockPackageBalances StockPackageBalance[]
+  inventoryReceiptItems InventoryReceiptItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@unique([tenantId, branchId, sku])
+  @@index([tenantId, branchId])
+  @@map("products")
+}
+
+model Role {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  name     String
+  scope    String
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  userBranches UserBranch[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, scope])
+  @@map("roles")
+}
+
+model Permission {
+  id          String @id @default(uuid()) @db.Uuid
+  code        String @unique
+  description String
+
+  @@map("permissions")
+}
+
+model UserBranch {
+  userId   String @map("user_id") @db.Uuid
+  branchId String @map("branch_id") @db.Uuid
+  roleId   String @map("role_id") @db.Uuid
+
+  user   User   @relation(fields: [userId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@id([userId, branchId])
+  @@index([roleId])
+  @@map("user_branches")
+}
+
+model Category {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  name         String
+  displayOrder Int      @default(0) @map("display_order")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId, active])
+  @@map("categories")
+}
+
+model PreparationStation {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  branchId  String   @map("branch_id") @db.Uuid
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  products Product[]
+  orderItems OrderItem[]
+  tickets PreparationTicket[]
+
+  @@unique([tenantId, branchId, name])
+  @@index([tenantId, branchId, active])
+  @@map("preparation_stations")
+}
+
+model ServiceTable {
+  id        String             @id @default(uuid()) @db.Uuid
+  tenantId  String             @map("tenant_id") @db.Uuid
+  branchId  String             @map("branch_id") @db.Uuid
+  name      String
+  status    ServiceTableStatus @default(AVAILABLE)
+  active    Boolean            @default(true)
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  orders Order[]
+
+  @@unique([tenantId, branchId, name])
+  @@index([tenantId, branchId, status])
+  @@map("tables")
+}
+
+model CustomerTab {
+  id            String            @id @default(uuid()) @db.Uuid
+  tenantId      String            @map("tenant_id") @db.Uuid
+  branchId      String            @map("branch_id") @db.Uuid
+  displayNumber Int               @map("display_number")
+  customerLabel String?           @map("customer_label")
+  status        CustomerTabStatus @default(OPEN)
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  orders Order[]
+
+  @@unique([tenantId, branchId, displayNumber])
+  @@index([tenantId, branchId, status])
+  @@map("tabs")
+}
+
+model ProductImage {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  storageKey    String   @map("storage_key")
+  sourceUrl     String?  @map("source_url")
+  sourceDomain  String?  @map("source_domain")
+  sourceType    String?  @map("source_type")
+  usageNote     String?  @map("usage_note")
+  mimeType      String   @map("mime_type")
+  width         Int
+  height        Int
+  fileSizeBytes BigInt   @map("file_size_bytes")
+  sha256        String
+  altText       String   @map("alt_text")
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  status        String
+  createdBy     String   @map("created_by") @db.Uuid
+  archivedAt    DateTime? @map("archived_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant  @relation(fields: [tenantId], references: [id])
+  product       Product @relation(fields: [productId], references: [id])
+  createdByUser User    @relation(fields: [createdBy], references: [id])
+
+  @@unique([tenantId, sha256])
+  @@unique([storageKey])
+  @@index([tenantId, productId])
+  @@index([tenantId, status])
+  @@map("product_images")
+}
+
+model ProductPackage {
+  id              String  @id @default(uuid()) @db.Uuid
+  tenantId        String  @map("tenant_id") @db.Uuid
+  productId       String  @map("product_id") @db.Uuid
+  name            String
+  unitsPerPackage Decimal @map("units_per_package") @db.Decimal(12, 3)
+  active          Boolean @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  stockPackageBalances StockPackageBalance[]
+  inventoryReceiptItems InventoryReceiptItem[]
+
+  @@unique([tenantId, productId, name])
+  @@index([tenantId, productId, active])
+  @@map("product_packages")
+}
+
+model Order {
+  id                  String      @id @default(uuid()) @db.Uuid
+  tenantId            String      @map("tenant_id") @db.Uuid
+  branchId            String      @map("branch_id") @db.Uuid
+  userId              String      @map("user_id") @db.Uuid
+  clientCommandId     String?     @map("client_command_id")
+  type                OrderType   @default(COUNTER)
+  tableId             String?     @map("table_id") @db.Uuid
+  tabId               String?     @map("tab_id") @db.Uuid
+  status              OrderStatus @default(DRAFT)
+  subtotalCents       BigInt      @map("subtotal_cents")
+  discountCents       BigInt      @default(0) @map("discount_cents")
+  totalCents          BigInt      @map("total_cents")
+  costOfGoodsCents    BigInt      @default(0) @map("cost_of_goods_cents")
+  version             Int         @default(1)
+  openedAt            DateTime    @default(now()) @map("opened_at")
+  closedAt            DateTime?   @map("closed_at")
+  completedAt         DateTime?   @map("completed_at")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  tenant            Tenant @relation(fields: [tenantId], references: [id])
+  branch            Branch @relation(fields: [branchId], references: [id])
+  user              User   @relation(fields: [userId], references: [id])
+  table             ServiceTable? @relation(fields: [tableId], references: [id])
+  tab               CustomerTab?  @relation(fields: [tabId], references: [id])
+  items             OrderItem[]
+  paymentRecords    PaymentRecord[]
+  stockMovements    StockMovement[]
+  financialEntries  FinancialEntry[]
+  auditLogs         AuditLog[]
+  statusHistory     OrderStatusHistory[]
+  preparationTickets PreparationTicket[]
+  sale              Sale?
+
+  @@unique([tenantId, branchId, clientCommandId])
+  @@index([tenantId, branchId, status])
+  @@map("orders")
+}
+
+model Sale {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  branchId          String   @map("branch_id") @db.Uuid
+  orderId           String   @unique @map("order_id") @db.Uuid
+  saleNumber        Int      @map("sale_number")
+  status            String
+  grossCents        BigInt   @map("gross_cents")
+  discountCents     BigInt   @default(0) @map("discount_cents")
+  netCents          BigInt   @map("net_cents")
+  cmvCents          BigInt   @map("cmv_cents")
+  grossProfitCents  BigInt   @map("gross_profit_cents")
+  soldAt            DateTime @default(now()) @map("sold_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+  receivables AccountReceivable[]
+
+  @@unique([tenantId, branchId, saleNumber])
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, branchId, soldAt])
+  @@map("sales")
+}
+
+model PaymentMethod {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  name     String
+  type     String
+  active   Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId, active])
+  @@map("payment_methods")
+}
+
+model CardTerminal {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  branchId String  @map("branch_id") @db.Uuid
+  name     String
+  provider String
+  active   Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@unique([tenantId, branchId, name])
+  @@index([tenantId, branchId, active])
+  @@map("card_terminals")
+}
+
+model CashSession {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  branchId        String    @map("branch_id") @db.Uuid
+  openedBy        String    @map("opened_by") @db.Uuid
+  openedAt        DateTime  @default(now()) @map("opened_at")
+  closedBy        String?   @map("closed_by") @db.Uuid
+  closedAt        DateTime? @map("closed_at")
+  openingCents    BigInt    @default(0) @map("opening_cents")
+  expectedCents   BigInt    @default(0) @map("expected_cents")
+  countedCents    BigInt?   @map("counted_cents")
+  differenceCents BigInt    @default(0) @map("difference_cents")
+  status          String
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  openedByUser User @relation("cash_session_opened_by", fields: [openedBy], references: [id])
+  closedByUser User? @relation("cash_session_closed_by", fields: [closedBy], references: [id])
+  movements CashMovement[]
+
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, branchId, openedAt])
+  @@map("cash_sessions")
+}
+
+model CashMovement {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  branchId      String   @map("branch_id") @db.Uuid
+  cashSessionId String   @map("cash_session_id") @db.Uuid
+  type          String
+  amountCents   BigInt   @map("amount_cents")
+  reason        String
+  actorId       String   @map("actor_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  cashSession CashSession @relation(fields: [cashSessionId], references: [id])
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([tenantId, branchId, cashSessionId])
+  @@map("cash_movements")
+}
+
+model OrderItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  branchId        String   @map("branch_id") @db.Uuid
+  orderId         String   @map("order_id") @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  quantity        Decimal  @db.Decimal(12, 3)
+  unitPriceCents  BigInt   @map("unit_price_cents")
+  totalCents      BigInt   @map("total_cents")
+  unitCostCents   BigInt   @map("unit_cost_cents")
+  totalCostCents  BigInt   @map("total_cost_cents")
+  status          OrderItemStatus @default(DRAFT)
+  preparationStationId String? @map("preparation_station_id") @db.Uuid
+  note            String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  preparationStation PreparationStation? @relation(fields: [preparationStationId], references: [id])
+  preparationTicketItems PreparationTicketItem[]
+
+  @@index([tenantId, branchId, orderId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  orderId     String      @map("order_id") @db.Uuid
+  fromStatus  OrderStatus? @map("from_status")
+  toStatus    OrderStatus  @map("to_status")
+  actorId     String?     @map("actor_id") @db.Uuid
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+  actor  User?  @relation(fields: [actorId], references: [id])
+
+  @@index([tenantId, orderId, createdAt])
+  @@map("order_status_history")
+}
+
+model PreparationTicket {
+  id         String                  @id @default(uuid()) @db.Uuid
+  tenantId   String                  @map("tenant_id") @db.Uuid
+  branchId   String                  @map("branch_id") @db.Uuid
+  stationId  String                  @map("station_id") @db.Uuid
+  orderId    String                  @map("order_id") @db.Uuid
+  status     PreparationTicketStatus @default(PENDING)
+  receivedAt DateTime                @default(now()) @map("received_at")
+  startedAt  DateTime?               @map("started_at")
+  readyAt    DateTime?               @map("ready_at")
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id])
+  branch  Branch @relation(fields: [branchId], references: [id])
+  station PreparationStation @relation(fields: [stationId], references: [id])
+  order   Order @relation(fields: [orderId], references: [id])
+  items   PreparationTicketItem[]
+
+  @@index([tenantId, branchId, stationId, status])
+  @@index([tenantId, branchId, orderId])
+  @@map("preparation_tickets")
+}
+
+model PreparationTicketItem {
+  id          String                  @id @default(uuid()) @db.Uuid
+  tenantId    String                  @map("tenant_id") @db.Uuid
+  ticketId    String                  @map("ticket_id") @db.Uuid
+  orderItemId String                  @map("order_item_id") @db.Uuid
+  quantity    Decimal                 @db.Decimal(12, 3)
+  status      PreparationTicketStatus @default(PENDING)
+  createdAt   DateTime                @default(now()) @map("created_at")
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  ticket    PreparationTicket @relation(fields: [ticketId], references: [id])
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@index([tenantId, ticketId])
+  @@index([tenantId, orderItemId])
+  @@map("preparation_ticket_items")
+}
+
+model PaymentRecord {
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  branchId        String        @map("branch_id") @db.Uuid
+  orderId         String        @map("order_id") @db.Uuid
+  method          String
+  status          PaymentStatus @default(RECORDED)
+  grossCents      BigInt        @map("gross_cents")
+  estimatedFeeCents BigInt      @default(0) @map("estimated_fee_cents")
+  netCents        BigInt        @map("net_cents")
+  expectedSettlementDate DateTime? @map("expected_settlement_date")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+  receivables AccountReceivable[]
+
+  @@index([tenantId, branchId, orderId])
+  @@map("payment_records")
+}
+
+model StockMovement {
+  id          String            @id @default(uuid()) @db.Uuid
+  tenantId    String            @map("tenant_id") @db.Uuid
+  branchId    String            @map("branch_id") @db.Uuid
+  productId   String            @map("product_id") @db.Uuid
+  orderId     String?           @map("order_id") @db.Uuid
+  type        StockMovementType
+  quantity    Decimal           @db.Decimal(12, 3)
+  unitCostCents BigInt          @map("unit_cost_cents")
+  reason      String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@index([tenantId, branchId, productId])
+  @@index([tenantId, branchId, orderId])
+  @@map("stock_movements")
+}
+
+model Supplier {
+  id           String  @id @default(uuid()) @db.Uuid
+  tenantId     String  @map("tenant_id") @db.Uuid
+  name         String
+  contactName  String? @map("contact_name")
+  phone        String?
+  whatsapp     String?
+  email        String?
+  leadTimeDays Int     @default(0) @map("lead_time_days")
+  active       Boolean @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  products SupplierProduct[]
+  inventoryReceipts InventoryReceipt[]
+  purchaseOrders PurchaseOrder[]
+  payables AccountPayable[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, active])
+  @@map("suppliers")
+}
+
+model SupplierProduct {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  supplierId     String   @map("supplier_id") @db.Uuid
+  productId      String   @map("product_id") @db.Uuid
+  supplierCode   String?  @map("supplier_code")
+  lastCostCents  BigInt?  @map("last_cost_cents")
+  lastPurchaseAt DateTime? @map("last_purchase_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([tenantId, supplierId, productId])
+  @@index([tenantId, productId])
+  @@map("supplier_products")
+}
+
+model StockLocation {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  branchId String  @map("branch_id") @db.Uuid
+  name     String
+  type     String
+  active   Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  balances StockBalance[]
+  packageBalances StockPackageBalance[]
+
+  @@unique([tenantId, branchId, name])
+  @@index([tenantId, branchId, active])
+  @@map("stock_locations")
+}
+
+model StockBalance {
+  tenantId         String  @map("tenant_id") @db.Uuid
+  branchId         String  @map("branch_id") @db.Uuid
+  locationId       String  @map("location_id") @db.Uuid
+  productId        String  @map("product_id") @db.Uuid
+  physicalQuantity Decimal @default(0) @map("physical_quantity") @db.Decimal(12, 3)
+  reservedQuantity Decimal @default(0) @map("reserved_quantity") @db.Decimal(12, 3)
+  version          Int     @default(1)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  location StockLocation @relation(fields: [locationId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@id([tenantId, branchId, locationId, productId])
+  @@index([tenantId, branchId, productId])
+  @@map("stock_balances")
+}
+
+model StockPackageBalance {
+  tenantId       String  @map("tenant_id") @db.Uuid
+  branchId       String  @map("branch_id") @db.Uuid
+  locationId     String  @map("location_id") @db.Uuid
+  productId      String  @map("product_id") @db.Uuid
+  packageId      String  @map("package_id") @db.Uuid
+  closedPackages Decimal @default(0) @map("closed_packages") @db.Decimal(12, 3)
+  looseUnits     Decimal @default(0) @map("loose_units") @db.Decimal(12, 3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  location StockLocation @relation(fields: [locationId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  productPackage ProductPackage @relation(fields: [packageId], references: [id])
+
+  @@id([tenantId, branchId, locationId, productId, packageId])
+  @@index([tenantId, branchId, productId])
+  @@map("stock_package_balances")
+}
+
+model InventoryReceipt {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  branchId       String   @map("branch_id") @db.Uuid
+  supplierId     String?  @map("supplier_id") @db.Uuid
+  documentNumber String?  @map("document_number")
+  status         String
+  receivedAt     DateTime @default(now()) @map("received_at")
+  totalCents     BigInt   @default(0) @map("total_cents")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+  items InventoryReceiptItem[]
+
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, supplierId])
+  @@map("inventory_receipts")
+}
+
+model InventoryReceiptItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  receiptId      String   @map("receipt_id") @db.Uuid
+  productId      String   @map("product_id") @db.Uuid
+  packageId      String?  @map("package_id") @db.Uuid
+  closedPackages Decimal  @default(0) @map("closed_packages") @db.Decimal(12, 3)
+  looseUnits     Decimal  @default(0) @map("loose_units") @db.Decimal(12, 3)
+  baseQuantity   Decimal  @map("base_quantity") @db.Decimal(12, 3)
+  unitCostCents  BigInt   @map("unit_cost_cents")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  receipt InventoryReceipt @relation(fields: [receiptId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  productPackage ProductPackage? @relation(fields: [packageId], references: [id])
+
+  @@index([tenantId, receiptId])
+  @@index([tenantId, productId])
+  @@map("inventory_receipt_items")
+}
+
+model FinancialEntry {
+  id          String             @id @default(uuid()) @db.Uuid
+  tenantId    String             @map("tenant_id") @db.Uuid
+  branchId    String             @map("branch_id") @db.Uuid
+  orderId     String?            @map("order_id") @db.Uuid
+  type        FinancialEntryType
+  amountCents BigInt             @map("amount_cents")
+  competenceDate DateTime        @map("competence_date")
+  settlementDate DateTime?       @map("settlement_date")
+  memo        String?
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  order  Order? @relation(fields: [orderId], references: [id])
+
+  @@index([tenantId, branchId, competenceDate])
+  @@index([tenantId, branchId, settlementDate])
+  @@map("financial_entries")
+}
+
+model PurchaseOrder {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  branchId      String    @map("branch_id") @db.Uuid
+  supplierId    String?   @map("supplier_id") @db.Uuid
+  status        String
+  orderedAt     DateTime  @default(now()) @map("ordered_at")
+  expectedAt    DateTime? @map("expected_at")
+  subtotalCents BigInt    @default(0) @map("subtotal_cents")
+  freightCents  BigInt    @default(0) @map("freight_cents")
+  discountCents BigInt    @default(0) @map("discount_cents")
+  totalCents    BigInt    @default(0) @map("total_cents")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+  items PurchaseOrderItem[]
+  payables AccountPayable[]
+
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, supplierId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String  @id @default(uuid()) @db.Uuid
+  tenantId        String  @map("tenant_id") @db.Uuid
+  purchaseOrderId String  @map("purchase_order_id") @db.Uuid
+  productId       String  @map("product_id") @db.Uuid
+  quantity        Decimal @db.Decimal(12, 3)
+  unitCostCents   BigInt  @map("unit_cost_cents")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, purchaseOrderId])
+  @@index([tenantId, productId])
+  @@map("purchase_order_items")
+}
+
+model FinancialCategory {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  name     String
+  type     String
+  active   Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  payables AccountPayable[]
+
+  @@unique([tenantId, name, type])
+  @@index([tenantId, active])
+  @@map("financial_categories")
+}
+
+model CostCenter {
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  branchId String  @map("branch_id") @db.Uuid
+  name     String
+  active   Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  payables AccountPayable[]
+
+  @@unique([tenantId, branchId, name])
+  @@index([tenantId, branchId, active])
+  @@map("cost_centers")
+}
+
+model AccountPayable {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  branchId        String    @map("branch_id") @db.Uuid
+  supplierId      String?   @map("supplier_id") @db.Uuid
+  purchaseOrderId String?   @map("purchase_order_id") @db.Uuid
+  categoryId      String?   @map("category_id") @db.Uuid
+  costCenterId    String?   @map("cost_center_id") @db.Uuid
+  description     String
+  competenceDate  DateTime  @map("competence_date")
+  dueDate         DateTime  @map("due_date")
+  amountCents     BigInt    @map("amount_cents")
+  openCents       BigInt    @map("open_cents")
+  status          String
+  paidAt          DateTime? @map("paid_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  category FinancialCategory? @relation(fields: [categoryId], references: [id])
+  costCenter CostCenter? @relation(fields: [costCenterId], references: [id])
+
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, branchId, dueDate])
+  @@map("account_payables")
+}
+
+model AccountReceivable {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  branchId         String    @map("branch_id") @db.Uuid
+  saleId           String?   @map("sale_id") @db.Uuid
+  paymentRecordId  String?   @map("payment_record_id") @db.Uuid
+  description      String
+  competenceDate   DateTime  @map("competence_date")
+  dueDate          DateTime  @map("due_date")
+  grossCents       BigInt    @map("gross_cents")
+  feeCents         BigInt    @default(0) @map("fee_cents")
+  netExpectedCents BigInt    @map("net_expected_cents")
+  openCents        BigInt    @map("open_cents")
+  status           String
+  settledAt        DateTime? @map("settled_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  sale Sale? @relation(fields: [saleId], references: [id])
+  paymentRecord PaymentRecord? @relation(fields: [paymentRecordId], references: [id])
+
+  @@index([tenantId, branchId, status])
+  @@index([tenantId, branchId, dueDate])
+  @@map("account_receivables")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  branchId      String   @map("branch_id") @db.Uuid
+  actorUserId   String?  @map("actor_user_id") @db.Uuid
+  orderId       String?  @map("order_id") @db.Uuid
+  action        String
+  correlationId String?  @map("correlation_id")
+  payload       Json
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  actor  User?  @relation(fields: [actorUserId], references: [id])
+  order  Order? @relation(fields: [orderId], references: [id])
+
+  @@index([tenantId, branchId, action])
+  @@index([tenantId, branchId, orderId])
+  @@map("audit_logs")
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id")
+  eventType     String    @map("event_type")
+  payloadJson   Json      @map("payload_json")
+  status        String
+  createdAt     DateTime  @default(now()) @map("created_at")
+  publishedAt   DateTime? @map("published_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, status, createdAt])
+  @@map("outbox_events")
+}
+
+model SyncCommand {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  branchId         String    @map("branch_id") @db.Uuid
+  clientCommandId  String    @map("client_command_id")
+  deviceId         String    @map("device_id")
+  userId           String    @map("user_id") @db.Uuid
+  commandType      String    @map("command_type")
+  payloadJson      Json      @map("payload_json")
+  status           String
+  serverResultJson Json?     @map("server_result_json")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  processedAt      DateTime? @map("processed_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, branchId, clientCommandId])
+  @@index([tenantId, branchId, status])
+  @@map("sync_commands")
+}
+
+model Attachment {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  storageKey String   @map("storage_key")
+  fileName   String   @map("file_name")
+  mimeType   String   @map("mime_type")
+  sizeBytes  BigInt   @map("size_bytes")
+  createdBy  String   @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  createdByUser User @relation(fields: [createdBy], references: [id])
+
+  @@unique([storageKey])
+  @@index([tenantId, createdAt])
+  @@map("attachments")
+}
+
+model ReportExport {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  branchId   String    @map("branch_id") @db.Uuid
+  type       String
+  format     String
+  filtersJson Json     @map("filters_json")
+  status     String
+  storageKey String?   @map("storage_key")
+  expiresAt  DateTime? @map("expires_at")
+  createdBy  String    @map("created_by") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+  createdByUser User @relation(fields: [createdBy], references: [id])
+
+  @@index([tenantId, branchId, type])
+  @@index([tenantId, branchId, status])
+  @@map("report_exports")
+}
+
+model IdempotencyRecord {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  branchId      String   @map("branch_id") @db.Uuid
+  key           String
+  operation     String
+  requestHash   String   @map("request_hash")
+  responseBody  Json?    @map("response_body")
+  statusCode    Int?     @map("status_code")
+  lockedUntil   DateTime? @map("locked_until")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@unique([tenantId, branchId, key])
+  @@index([tenantId, branchId, operation])
+  @@map("idempotency_records")
+}

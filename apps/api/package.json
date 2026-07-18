@@ -1,0 +1,35 @@
+{
+  "name": "@adegaos/api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "node dist/main.js",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "corepack pnpm --filter @adegaos/auth build && vitest run --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@adegaos/auth": "workspace:*",
+    "@adegaos/assets": "workspace:*",
+    "@adegaos/config": "workspace:*",
+    "@adegaos/database": "workspace:*",
+    "@adegaos/domain": "workspace:*",
+    "@adegaos/observability": "workspace:*",
+    "@nestjs/common": "11.1.27",
+    "@nestjs/core": "11.1.27",
+    "@nestjs/platform-express": "11.1.27",
+    "@nestjs/swagger": "11.4.4",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6"
+  }
+}

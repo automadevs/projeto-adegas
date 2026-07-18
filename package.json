@@ -1,0 +1,41 @@
+{
+  "name": "adegaos",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:api": "corepack pnpm --filter @adegaos/auth build && corepack pnpm --filter @adegaos/database build && corepack pnpm --filter @adegaos/api build && corepack pnpm --filter @adegaos/api dev",
+    "dev:admin": "corepack pnpm --filter @adegaos/admin-web dev",
+    "dev:attendant": "corepack pnpm --filter @adegaos/attendant-pwa dev",
+    "dev:worker": "corepack pnpm --filter @adegaos/worker dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "validate": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build",
+    "db:generate": "corepack pnpm --filter @adegaos/database prisma:generate",
+    "db:validate": "corepack pnpm --filter @adegaos/database prisma:validate",
+    "db:migrate": "corepack pnpm --filter @adegaos/database prisma:migrate",
+    "db:studio": "corepack pnpm --filter @adegaos/database prisma:studio",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "26.0.1",
+    "eslint": "10.5.0",
+    "globals": "17.7.0",
+    "pnpm": "11.9.0",
+    "prettier": "3.8.4",
+    "tsx": "4.22.4",
+    "turbo": "2.10.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.62.0",
+    "vitest": "4.1.9"
+  }
+}
