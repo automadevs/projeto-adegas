@@ -151,6 +151,7 @@ export function PhonePreview({
         lines: cart.map((line) => ({
           category: line.product.category,
           name: line.product.name,
+          productImage: line.product.primaryImage ?? null,
           quantity: line.quantity
         })),
         orderId: result.orderId,

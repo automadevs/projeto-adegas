@@ -1,11 +1,17 @@
 "use client";
 
-export type OperationalSector = "bar" | "kitchen";
+export type OperationalSector = "bar" | "kitchen" | "none";
 export type OperationalTicketStatus = "novo" | "recebido" | "pronto";
 
 export interface OperationalTicketItem {
   readonly name: string;
   readonly quantity: number;
+  readonly image?: {
+    readonly altText: string;
+    readonly height: number;
+    readonly url: string;
+    readonly width: number;
+  } | null;
 }
 
 export interface OperationalTicket {
@@ -23,16 +29,26 @@ export interface OperationalOrderLine {
   readonly category: string;
   readonly name: string;
   readonly quantity: number;
+  readonly productImage?: {
+    readonly altText: string;
+    readonly height: number;
+    readonly url: string;
+    readonly width: number;
+  } | null;
 }
 
 const QUEUE_KEY = "adegaos-operational-tickets-v1";
 const QUEUE_EVENT = "adegaos-operational-tickets";
 const SOUND_EVENT = "adegaos-demo-sound";
 
-const barCategories = new Set(["Doses", "Combos", "Cachacas", "Drinks", "Energetico e Ice", "Cervejas 600ml", "Cervejas Long Neck"]);
+const kitchenCategories = new Set(["Refeicoes"]);
+const barCategories = new Set(["Drinks"]);
 
 export function sectorForCategory(category: string): OperationalSector {
-  return barCategories.has(category) ? "bar" : "kitchen";
+  const normalizedCategory = category.trim().toLowerCase();
+  if (normalizedCategory === "refeicoes") return "kitchen";
+  if (normalizedCategory === "drinks") return "bar";
+  return "none";
 }
 
 export function loadOperationalTickets(): OperationalTicket[] {
@@ -60,8 +76,9 @@ export function publishOperationalOrder(input: {
 
   for (const line of input.lines) {
     const sector = sectorForCategory(line.category);
+    if (sector === "none") continue;
     const items = grouped.get(sector) ?? [];
-    items.push({ name: line.name, quantity: line.quantity });
+    items.push({ image: line.productImage ?? null, name: line.name, quantity: line.quantity });
     grouped.set(sector, items);
   }
 

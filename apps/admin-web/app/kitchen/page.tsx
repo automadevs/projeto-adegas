@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CookingPot } from "lucide-react";
 import { loadOperationalTickets, subscribeOperationalSounds, subscribeOperationalTickets, updateOperationalTicket, type OperationalTicket, type OperationalTicketStatus } from "../_lib/operational-queue";
+import { ProductThumb } from "../manager/_components/product-thumb";
 
 export default function KitchenPage() {
   const [tickets, setTickets] = useState<OperationalTicket[]>(() => loadOperationalTickets());
@@ -46,7 +47,14 @@ export default function KitchenPage() {
             <article className="ops-card" key={ticket.id}>
               <div>
                 <h2>{ticket.orderId.slice(0, 8)} - {ticket.customer}</h2>
-                <p>{ticket.items.map((item) => `${item.quantity}x ${item.name}`).join(", ")}</p>
+                <ul className="ops-ticket-items">
+                  {ticket.items.map((item) => (
+                    <li className="ops-ticket-item" key={`${ticket.id}-${item.name}`}>
+                      <ProductThumb fallbackLabel="Foto" image={item.image ?? null} />
+                      <span>{item.quantity}x {item.name}</span>
+                    </li>
+                  ))}
+                </ul>
                 <small>Status: {ticket.status === "novo" ? "Novo" : ticket.status === "recebido" ? "Recebido" : "Pronto"}</small>
               </div>
               <div className="ops-actions">

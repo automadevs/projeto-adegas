@@ -659,7 +659,24 @@ export const productImageKeysBySku = {
   ANT350: "antarctica-subzero-can-350ml",
   COCA2L: "coca-cola-original-bottle-2l",
   SMIRNOFF998: "smirnoff-vodka-bottle-998ml",
-  TNT269: "tnt-energy-drink-can-269ml"
+  TNT269: "tnt-energy-drink-can-269ml",
+  "AGUA-GAS": "crystal-water-bottle-500ml",
+  "AGUA-SEM-GAS": "crystal-water-bottle-500ml",
+  "H2O-1L": "crystal-water-bottle-500ml",
+  "CERV-BRAHMA-600": "brahma-can-350ml",
+  "CERV-SKOL-600": "skol-pilsen-can-350ml",
+  "CERV-HEINEKEN-600": "heineken-long-neck-330ml",
+  "CERV-HEINEKEN-LN": "heineken-long-neck-330ml",
+  "REFRI-COCA-LATA": "coca-cola-original-bottle-2l",
+  "DOSE-SMIRNOFF": "smirnoff-vodka-bottle-998ml",
+  "DOSE-RED-LABEL": "johnnie-walker-red-label-bottle-1l",
+  "DOSE-GIN-TANQUERAY": "johnnie-walker-red-label-bottle-1l",
+  "COMBO-SMIRNOFF": "smirnoff-vodka-bottle-998ml",
+  "COMBO-RED-LABEL": "johnnie-walker-red-label-bottle-1l",
+  "COMBO-GIN-TANQUERAY": "johnnie-walker-red-label-bottle-1l",
+  "DRINK-CAIPI-MORANGO": "smirnoff-vodka-bottle-998ml",
+  "DRINK-CAIPI-LIMAO": "smirnoff-vodka-bottle-998ml",
+  "DRINK-CAIPI-KIWI-CREM": "smirnoff-vodka-bottle-998ml"
 } as const;
 
 export type DemoProductSku = keyof typeof productImageKeysBySku;
