@@ -18,10 +18,18 @@ export function StockChip({ product }: { readonly product: Product }) {
 
 export function ProductThumb({ large = false, product }: { readonly large?: boolean; readonly product: Product }) {
   const image = product.primaryImage;
-  if (!image) return null;
+  if (!image) {
+    return (
+      <span className={large ? "product-thumb large no-media" : "product-thumb no-media"}>
+        <span className="product-thumb-fallback">Foto</span>
+      </span>
+    );
+  }
+
   return (
     <span className={large ? "product-thumb large has-image" : "product-thumb has-image"}>
-      <img alt={image.altText} height={image.height} loading={large ? "eager" : "lazy"} onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.closest(".product-thumb")?.remove(); }} src={image.url} width={image.width} />
+      <img alt={image.altText} height={image.height} loading={large ? "eager" : "lazy"} onError={(event) => { event.currentTarget.hidden = true; event.currentTarget.closest(".product-thumb")?.classList.add("no-media"); event.currentTarget.closest(".product-thumb")?.classList.remove("has-image"); event.currentTarget.closest(".product-thumb")?.querySelector(".product-thumb-fallback")?.remove(); }} src={image.url} width={image.width} />
+      <span className="product-thumb-fallback">Foto</span>
     </span>
   );
 }

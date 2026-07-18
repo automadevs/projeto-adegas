@@ -27,6 +27,7 @@ export interface OperationalOrderLine {
 
 const QUEUE_KEY = "adegaos-operational-tickets-v1";
 const QUEUE_EVENT = "adegaos-operational-tickets";
+const SOUND_EVENT = "adegaos-demo-sound";
 
 const barCategories = new Set(["Doses", "Combos", "Cachacas", "Drinks", "Energetico e Ice", "Cervejas 600ml", "Cervejas Long Neck"]);
 
@@ -76,13 +77,21 @@ export function publishOperationalOrder(input: {
   }));
 
   saveOperationalTickets([...tickets, ...loadOperationalTickets()].slice(0, 80));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(SOUND_EVENT, { detail: { type: "new-ticket" } }));
+  }
   return tickets;
 }
 
 export function updateOperationalTicket(ticketId: string, status: OperationalTicketStatus): void {
-  saveOperationalTickets(loadOperationalTickets().map((ticket) => (
+  const currentTickets = loadOperationalTickets();
+  const nextTickets = currentTickets.map((ticket) => (
     ticket.id === ticketId ? { ...ticket, status } : ticket
-  )));
+  ));
+  saveOperationalTickets(nextTickets);
+  if (typeof window !== "undefined" && status === "pronto") {
+    window.dispatchEvent(new CustomEvent(SOUND_EVENT, { detail: { type: "ready-ticket" } }));
+  }
 }
 
 export function subscribeOperationalTickets(callback: (tickets: OperationalTicket[]) => void): () => void {
@@ -95,6 +104,20 @@ export function subscribeOperationalTickets(callback: (tickets: OperationalTicke
     window.removeEventListener(QUEUE_EVENT, onChange);
     window.removeEventListener("storage", onChange);
   };
+}
+
+export function subscribeOperationalSounds(callback: (eventType: "new-ticket" | "ready-ticket") => void): () => void {
+  if (typeof window === "undefined") return () => undefined;
+
+  const onSound = (event: Event) => {
+    const detail = (event as CustomEvent<{ type?: "new-ticket" | "ready-ticket" }>).detail;
+    if (detail?.type === "new-ticket" || detail?.type === "ready-ticket") {
+      callback(detail.type);
+    }
+  };
+
+  window.addEventListener(SOUND_EVENT, onSound as EventListener);
+  return () => window.removeEventListener(SOUND_EVENT, onSound as EventListener);
 }
 
 function saveOperationalTickets(tickets: readonly OperationalTicket[]): void {

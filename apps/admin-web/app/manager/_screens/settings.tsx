@@ -1,4 +1,5 @@
 import { InfoRows, PageHeader, SectionCard, Toggle } from "../_components/ui";
+import { DEMO_STORE_NAME } from "../../_lib/demo-config";
 
 export function SettingsScreen({ onReset }: { readonly onReset: () => void }) {
   return (

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Armchair, Building2, CookingPot, KeyRound, Mail, Martini, Settings, Store, Wine } from "lucide-react";
+import { DEMO_STORE_NAME } from "../_lib/demo-config";
 
 type Role = "attendant" | "kitchen" | "bar" | "manager";
 
@@ -24,7 +25,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [company, setCompany] = useState("Adega do Ze");
+  const [company, setCompany] = useState(DEMO_STORE_NAME);
   const [branch, setBranch] = useState("Loja matriz");
   const [role, setRole] = useState<Role>("manager");
   const [error, setError] = useState("");
@@ -83,7 +84,7 @@ export default function LoginPage() {
           <label>
             <span><Building2 size={15} /> Empresa</span>
             <select onChange={(event) => setCompany(event.target.value)} value={company}>
-              <option>Adega do Ze</option>
+              <option>{DEMO_STORE_NAME}</option>
             </select>
           </label>
           <label>

@@ -38,6 +38,7 @@ import { DateFilter } from "./date-filter";
 import { Icon } from "./icons";
 import { PhonePreview } from "./phone-preview";
 import { EmployeesScreen } from "../_screens/employees";
+import { DEMO_STORE_NAME } from "../../_lib/demo-config";
 
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -493,7 +494,7 @@ export function ManagerShell() {
         <div className="sidebar-footer">
           <button className="store-switch" onClick={() => setStatus("Loja matriz selecionada")} type="button">
             <Icon name="store" />
-            <span><strong>Adega do Ze</strong><small>Loja matriz</small></span>
+            <span><strong>{DEMO_STORE_NAME}</strong><small>Loja matriz</small></span>
             <Icon name="chevron" />
           </button>
           <div className="profile"><span>JF</span><div><strong>Jose Ferreira</strong><small>Administrador</small></div></div>

@@ -23,9 +23,9 @@ export function DashboardScreen({
   return (
     <>
       <div className="source-stat-grid source-stat-grid-five">
-        <StatCard delta="12,4%" icon="money" label="Receita" tone="success" value={formatMoney(dashboard.revenueCents)} hint="Ontem: R$ 16.678,20" />
-        <StatCard delta="8,7%" icon="box" label="CMV" tone="destructive" value={formatMoney(dashboard.cogsCents)} hint="Ontem: R$ 7.785,10" />
-        <StatCard delta="14,1%" icon="percent" label="Margem" tone="info" value={formatPercent(marginPercent)} hint="Ontem: 53,4%" />
+        <StatCard delta="12,4%" icon="money" label="Receita" tone="success" value={formatMoney(dashboard.revenueCents)} hint="Hoje: R$ 1.800,00" />
+        <StatCard delta="8,7%" icon="box" label="CMV" tone="destructive" value={formatMoney(dashboard.cogsCents)} hint="Hoje: R$ 990,00" />
+        <StatCard delta="14,1%" icon="percent" label="Margem" tone="info" value={formatPercent(marginPercent)} hint="Hoje: 45,0%" />
         <StatCard icon="cash" label="Caixa" tone="primary" value="R$ 1.248,50" hint="Em aberto" />
         <StatCard icon="alert" label="Estoque baixo" tone="warning" value={String(dashboard.lowStockCount || lowStock.length)} hint="Produtos" />
       </div>

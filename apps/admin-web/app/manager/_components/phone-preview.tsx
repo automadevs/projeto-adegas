@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { loadOperationalTickets, publishOperationalOrder, subscribeOperationalTickets, updateOperationalTicket, type OperationalTicket } from "../../_lib/operational-queue";
+import { loadOperationalTickets, publishOperationalOrder, subscribeOperationalSounds, subscribeOperationalTickets, updateOperationalTicket, type OperationalTicket } from "../../_lib/operational-queue";
 import { productSkeletonSlots } from "../_lib/constants";
 import { api } from "../_lib/api";
 import { formatMoney, normalize, paymentLabel, shortProductName } from "../_lib/format";
@@ -52,6 +52,22 @@ export function PhonePreview({
   const [tickets, setTickets] = useState<OperationalTicket[]>(() => loadOperationalTickets());
 
   useEffect(() => subscribeOperationalTickets(setTickets), []);
+  useEffect(() => subscribeOperationalSounds((eventType) => {
+    if (eventType !== "ready-ticket") return;
+    const context = typeof window !== "undefined" ? new AudioContext() : null;
+    if (!context) return;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 1046.5;
+    gain.gain.value = 0.04;
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.14);
+    oscillator.stop(context.currentTime + 0.15);
+    void context.close();
+  }), []);
 
   const categoryOptions = useMemo(() => {
     const categories = Array.from(new Set(products.map((product) => product.category).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"));

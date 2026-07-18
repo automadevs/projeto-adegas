@@ -2,12 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Martini } from "lucide-react";
-import { loadOperationalTickets, subscribeOperationalTickets, updateOperationalTicket, type OperationalTicket, type OperationalTicketStatus } from "../_lib/operational-queue";
+import { loadOperationalTickets, subscribeOperationalSounds, subscribeOperationalTickets, updateOperationalTicket, type OperationalTicket, type OperationalTicketStatus } from "../_lib/operational-queue";
 
 export default function BarPage() {
   const [tickets, setTickets] = useState<OperationalTicket[]>(() => loadOperationalTickets());
 
   useEffect(() => subscribeOperationalTickets(setTickets), []);
+  useEffect(() => subscribeOperationalSounds(() => {
+    const context = typeof window !== "undefined" ? new AudioContext() : null;
+    if (!context) return;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "triangle";
+    oscillator.frequency.value = 660;
+    gain.gain.value = 0.04;
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.12);
+    oscillator.stop(context.currentTime + 0.13);
+    void context.close();
+  }), []);
 
   const barTickets = useMemo(() => tickets.filter((ticket) => ticket.sector === "bar"), [tickets]);
 
@@ -22,6 +37,7 @@ export default function BarPage() {
           <div>
             <h1>Bar</h1>
             <p>Fila de drinks, doses e combos com controle simples de preparo.</p>
+            <small>Modo demo local • sem banco</small>
           </div>
           <Martini aria-hidden="true" size={22} />
         </header>
